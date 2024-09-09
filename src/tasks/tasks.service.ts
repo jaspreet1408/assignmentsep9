@@ -12,10 +12,7 @@ export class TasksService {
   
   async create(createTaskDto: CreateTaskDto) {
     const task = this.TaskRepository.create(createTaskDto);
-    
     return await this.TaskRepository.save(task);
-    
-
   }
 
   findAll() {

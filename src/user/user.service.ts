@@ -6,20 +6,35 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { UserTask } from 'src/user-task/entities/user-task.entity';
+import { Task } from 'src/tasks/entities/task.entity';
 
 @Injectable()
 export class UserService {
   private readonly users = [];
-  constructor(@InjectRepository (User) private UserRepository: Repository<User>){}
+  constructor(
+    @InjectRepository (UserTask) private UserTaskRepository: Repository<UserTask>,
+
+    @InjectRepository (User) private UserRepository: Repository<User>,
+
+    @InjectRepository (Task) private TaskRepository: Repository<Task>){}
 
   async create(createUserDto: CreateUserDto) {
     const password = createUserDto?.password
               ? await this.hashPassword(createUserDto?.password)
               : '';
     createUserDto.password = password;
-    const user = this.UserRepository.create(createUserDto);
     
-    return await this.UserRepository.save(user);
+    const userexists = await this.findUser(createUserDto.username);
+    
+    if(!userexists){
+      const user = this.UserRepository.create(createUserDto);
+      return await this.UserRepository.save(user);
+
+    } else {
+      return 'Something went wrong';
+    } 
+
   }
 
   /**
@@ -49,12 +64,16 @@ export class UserService {
     return this.UserRepository.find();
   }
 
+  getuserTasks(user_id: number) {
+    return this.UserTaskRepository.find({where: {'user_id': user_id}});
+  }
+
   async findUser(username: string): Promise<User | undefined> {
     return this.UserRepository.findOne({where: {username : username}});
   }
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.users.find(user => user.username === username);
+  findOne(id: number) {
+    return this.UserRepository.findOne({where: {id}});
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
